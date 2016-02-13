@@ -43,21 +43,8 @@ app.get('/api', function (req, res, next) {
       "data": data
     }
     var dones = analyze(params2);
-   // console.log('here we go 2:');
-   // console.log(dones);
     res.send(dones);
-
-    ///console.log(data);
-    //res.send(data);
-    //res.send(done);
   });
-
-  //console.log(obj);
-
- // var rand = retrieve(spreadsheetID, sheetName, sortBy, sortType, order, headingRow, dataRowStart, dataRowEnd);
-  //console.log(rand);
-  //console.log("------------------------------------------");
- // res.send('done');
 });
 
 function retrieve(params, callback) {
@@ -74,69 +61,42 @@ function retrieve(params, callback) {
   });
 };
 
-/*function retrieve(spreadsheetID, sheetName, sortBy, sortType, order, headingRow, dataRowStart, dataRowEnd) {
-  var data;
-  var spreadsheet = new GoogleSpreadsheet(spreadsheetID);
-  spreadsheet.useServiceAccountAuth(creds, function(err) {
-    spreadsheet.getInfo( function( err, data ){
-      var sheet = _.find(data.worksheets, function(sheet) { return sheet.title == sheetName; });
-      sheet.getCells( function( err, cells ){
-        if (err) console.log(err);
-        //else { analyze(cells, sortBy, sortType, order, headingRow, dataRowStart, dataRowEnd); }
-        data = cells;
-      });
-    });
-  });
-  console.log(data);
-  return data;
-}*/
-
-// http://localhost:3000/api?sid=1vQ1TIcmrNnzqaR0bzuAW4hZ2TTG6A_-LTV79n0er4Uw&sname=Sheet%201&sby=Number&stype=alphabetical&order=ascending&hrow=1&drow=4&dend=8
-
 function analyze(params) {
-  // creates a rectangle using heading and data start
-
   var headings = _.pluck(_.filter(params.data, function(cell) { return cell.row == parseInt(params.headingRow); }), 'value');
-  var sorter = headings.indexOf(params.sortBy) == -1 ? undefined : headings[ headings.indexOf(params.sortBy) ];
+  if ( headings.indexOf(params.sortBy) == -1 ) {
+    return 'error';
+  } else {
+    var cells = _.filter(params.data, function(cell) {
+      return (cell.row >= parseInt(params.dataRowStart) && cell.row <= parseInt(params.dataRowEnd));
+    });
+    if (params.sortType == 1) { // alphabetical
+      var rows = _.sortBy(_.groupBy(cells, function(cell) { return cell.row; }), function(row) {
+        return row[ headings.indexOf(params.sortBy) ].value; 
+      });
+      var returnData = _.map(rows, function(row) { return _.pluck(row, 'value'); });
+    } else if (params.sortType == 2) { // numerical
+      var rows = _.sortBy(_.groupBy(cells, function(cell) { return cell.row; }), function(row) {
+        return parseInt(row[ headings.indexOf(params.sortBy) ].numericValue); 
+      });
+      var returnData = _.map(rows, function(row) { return _.pluck(row, 'value'); });
+    } else if (params.sortType == 3) { // matching
+      var rows = _.groupBy(_.groupBy(cells, function(cell) { return cell.row; }), function(row) {
+        return row[ headings.indexOf(params.sortBy) ].value;
+      });
+      var returnData = _.map(rows, function(row) { return _.pluck(row, 'value'); }); // error
+      // console.log(_.keys(rows));
+    } else {
+      return 'error';
+    }
+  }
 
- // var data = params.data;
 
-  var cells = _.filter(params.data, function(cell) {
-    return (cell.row >= parseInt(params.dataRowStart) && cell.row <= parseInt(params.dataRowEnd));
-  });
-
-  var rows = _.groupBy(cells, function(cell) { return cell.row; });
-
-  rows = _.sortBy(rows, function(row) {
-    var o = row[ headings.indexOf(params.sortBy) ];
-    console.log(o.numericValue);
-    return parseInt(o.numericValue); 
-  })
+ // returns array of rows (array) where each row has an array of cells (objects);
+  // add more than just order/sort, add in matching, and others based on custom algorithms. also make the user process much easier. for example, instead of typing in a row for end and start, why not make it a box that users can highlight. maybe even show a preview of the spreadsheet and allow for live editting through the algorithms i have.
 
 
- // data = _.sortBy()
-
-
- /* var cells = _.filter(params.data, function(cell) {
-    return (cell.row >= parseInt(params.dataRowStart) && cell.row <= parseInt(params.dataRowEnd));
-  });
-  var columns = _.groupBy(cells, function(cell) { return cell.col; });
-  console.log("*******************************************************");
-  console.log(columns);
-  console.log("*******************************************************");
-
-  var col = columns[headings.indexOf(sorter)];
-  if (params.sortType == 1) {
-    col = _.sortBy(col, function(o) { return o.value; });
-  } else if (params.sortType == 2) {
-    col = _.sortBy(col, function(o) { return o.numericValue; });
-  }*/
-
-  return rows;
-
+  return returnData;
 }
-
-//http://localhost:3000/api?
 
 // development error handler
 // will print stacktrace
@@ -149,53 +109,21 @@ module.exports = app;
 
 //analyze@spreadsheetanalyzer-1219.iam.gserviceaccount.com
 
-//var sortBy = sorters.indexOf(req.query.sby) == -1 ? undefined : sorters[ sorters.indexOf(req.query.sby) ];
-// var sorters = [ "date", "number", "alphabetical" ];
 
+      
 
+     // console.log(_.keys(rows));
 
+     // rows = _.sortBy(rows, function(row) {
+        //console.log(row[0]);
+        //return row;
+      //})
 
-  // alphabetical sort
- /* col = _.sortBy(_.map(col, function(obj) { 
-    var obj2 = obj;
-    obj2.numericValue = parseInt(obj.numericValue)
-    return obj2; 
-  }), function(obj){ return obj.numericValue });  
+      /*, function(group) {
+        console.log(group);
+        return _.keys(group)[0];
+      });*/
 
+      // _.groupBy(cells, function(cell) { return cell.row; })
 
-  // numerical sort
-  col = _.sortBy(_.map(col, function(obj) { 
-    var obj2 = obj;
-    obj2.numericValue = parseInt(obj.numericValue)
-    return obj2; 
-  }), function(obj){ return obj.numericValue }); */
-
-  //console.log(col);
-
-
-
-  //console.log(col[0]);
-  //console.log(row);
-   //var data1 = _.pluck(row, 'value');
-  //_.sortBy(row, 'numericValue');
-
- // var data2 = _.pluck(col, 'numericValue');
-  //console.log(data2);
- // data2 = _.map(data2, function(str){ return parseInt(str) });
-  //console.log(data2);
- // data2 = _.sortBy(data2, function(ro){ return ro });
-
-
-  /*if (typeof sorter != undefined) {
-    var numericRow = _.pluck(rows[headings.indexOf(sorter)], 'numericValue');
-    var row = 
-  }*/
-
-  //console.log(headings);
-  //console.log(sorter);
-  //console.log(data1);
- // console.log(data2);
-
-
-  //var headings = _.pluck(headingData, 'value');
-  //console.log(headingRow);
+// http://localhost:3000/api?sid=1vQ1TIcmrNnzqaR0bzuAW4hZ2TTG6A_-LTV79n0er4Uw&sname=Sheet%201&sby=Number&stype=alphabetical&order=ascending&hrow=1&drow=4&dend=8
